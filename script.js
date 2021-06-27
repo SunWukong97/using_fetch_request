@@ -7,10 +7,10 @@ yesterdayDate.setDate(yesterdayDate.getDate() - 1);
 let formatDate = yesterdayDate.toISOString().slice(0, 10);
 let date = "2021-06-20";
 console.log(formatDate);
-let url = `https://api.opencovid.ca/timeseries?stat=cases&loc=${prov[2]}&date=${formatDate}`;
-
+//let url = `https://api.opencovid.ca/timeseries?stat=cases&loc=${prov[2]}&date=${date}`;
+let url = `https://api.opencovid.ca/summary?date=${formatDate}`;
 let urls = [
-  `https://api.opencovid.ca/timeseries?stat=cases&loc=${prov[2]}&date=${formatDate}`,
+  `https://api.opencovid.ca/summary?date=${formatDate}`,
   "https://api.opencovid.ca/other?stat=prov",
 ];
 
@@ -52,20 +52,21 @@ Promise.all(
   .then((data) => {
     console.log("Success", data[0]);
     console.log("Success!", data[1]);
-    showData(data[0]);
+    showDataSummary(data[0]);
+    extractInfoFrom2DifferentAPICalls(data[0], data[1]);
   })
   .catch((err) => console.group(err));
 
-function showData(dataSet) {
+function showDataSummary(dataSet) {
   //console.log(dataSet);
-  //console.log(dataSet.cases[0]);
+  //console.log(dataSet.cases[1]);
   let listOfProv = "";
   let formatData;
 
-  for (let i in dataSet.cases) {
-    let jsonObj = dataSet.cases[i];
+  for (let i in dataSet.summary) {
+    let jsonObj = dataSet.summary[i];
     if (jsonObj.province !== "Repatriated") {
-      formatData = `<b>Province</b>: ${jsonObj.province} <br> <u>cases:</u>&emsp;&emsp;${jsonObj.cases} <br>cumulative cases: ${jsonObj.cumulative_cases}<br>date-report(DD-MM-YYYY): ${jsonObj.date_report}`;
+      formatData = `<b>Province</b>: ${jsonObj.province} <br> <u>cases:</u>&emsp;&emsp;${jsonObj.cases} <br>cumulative cases: ${jsonObj.cumulative_cases}<br>date-report(DD-MM-YYYY): ${jsonObj.date}`;
       listOfProv += formatData + "<br>";
     }
 
@@ -73,6 +74,27 @@ function showData(dataSet) {
   }
 
   document.querySelector(".root").innerHTML = listOfProv;
+}
+
+function extractInfoFrom2DifferentAPICalls(dataSet1, dataSet2) {
+  for (let i in dataSet1.summary) {
+    for (let j in dataSet2.prov) {
+      let jsonObj = dataSet1.summary[i];
+      let jsonObj2 = dataSet2.prov[j];
+      if (
+        jsonObj.province === jsonObj2.province &&
+        jsonObj.province !== "Repatriated"
+      ) {
+        console.log(jsonObj.province + " " + jsonObj2.province);
+        console.log(
+          `active cases: ${jsonObj.active_cases}\npopulation: ${jsonObj2.pop}`
+        );
+        console.log("infected %:", (jsonObj.active_cases / jsonObj2.pop) * 100);
+      }
+      //console.log(dataSet2.prov[i].province);
+    }
+    //console.log(dataSet1.summary[i].province);
+  }
 }
 
 function parseJson(response) {
